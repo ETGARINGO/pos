@@ -1,0 +1,27 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Sales - My Store</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="navbar"><div class="nav-left">🏪 My Store POS</div><div class="nav-right">
+  <a class="nav-btn" href="index.html">POS</a>
+  <a class="nav-btn" href="inventory.html">Inventory</a>
+  <a class="nav-btn" href="sales.html">Sales</a>\n  <a class="nav-btn" href="admin.html">Admin</a>
+  <a class="nav-btn" href="settings.html">Settings</a>
+</div></nav>
+<div style="padding:14px">
+  <h2 style="color:var(--accent)">Sales Reports</h2>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button class="btn" id="refreshSales">Refresh</button>
+    <button class="btn ghost" id="exportSalesBtn">Export Sales CSV</button>
+    <button class="btn ghost" id="clearSalesBtn" style="background:var(--danger)">Clear Sales</button>
+  </div>
+  <table class="table-list" id="salesTable"><tr><th>Date</th><th>Item</th><th>Qty</th><th>Subtotal</th><th>Total</th></tr></table>
+  <div class="footer-small" id="salesSummary"></div>
+</div>
+<div style="padding:14px"><h3 style="color:var(--accent)">Restock Log (preview)</h3><table class="table-list" id="restockPreview"><tr><th>Date</th><th>User</th><th>Item</th><th>Qty</th></tr></table></div>
+<script src="config.js"></script><script src="db.js"></script><script src="pos.js"></script>
+<script>
+function renderSales(){ const sales=JSON.parse(localStorage.getItem('offline_pos_sales')||'[]'); const t=document.getElementById('salesTable'); t.innerHTML='<tr><th>Date</th><th>Item</th><th>Qty</th><th>Subtotal</th><th>Total</th></tr>'; let sum=0; sales.forEach(s=>{ s.items.forEach(it=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${s.timestamp}</td><td>${it[0]}</td><td>${it[1]}</td><td>₱${Number(it[3]).toFixed(2)}</td><td>₱${Number(s.total).toFixed(2)}</td>`; t.appendChild(tr); }); sum+=Number(s.total); }); document.getElementById('salesSummary').innerText='Total sales: ₱'+sum.toFixed(2); }
+document.getElementById('refreshSales').addEventListener('click', renderSales);
+document.getElementById('exportSalesBtn').addEventListener('click', ()=>{ const csv=exportSalesCSV(); if(!csv){ alert('No sales'); return;} const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='sales_export.csv'; a.click(); });
+document.getElementById('clearSalesBtn').addEventListener('click', ()=>{ if(confirm('Clear all sales?')){ localStorage.removeItem('offline_pos_sales'); renderSales(); } });
+document.addEventListener('DOMContentLoaded', ()=>{ renderSales(); loadRestockPreview(); });
+function loadRestockPreview(){ const rows = getRestockLog(); const t = document.getElementById('restockPreview'); t.innerHTML='<tr><th>Date</th><th>User</th><th>Item</th><th>Qty</th></tr>'; rows.slice(-10).reverse().forEach(r=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${r.ts}</td><td>${r.user}</td><td>${r.item}</td><td>${r.qty}</td>`; t.appendChild(tr); }); }
+</script></body></html>

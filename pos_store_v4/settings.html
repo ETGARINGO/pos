@@ -1,0 +1,26 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Settings - My Store</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="navbar"><div class="nav-left">🏪 My Store POS</div><div class="nav-right">
+  <a class="nav-btn" href="index.html">POS</a>
+  <a class="nav-btn" href="inventory.html">Inventory</a>
+  <a class="nav-btn" href="sales.html">Sales</a>\n  <a class="nav-btn" href="admin.html">Admin</a>
+  <a class="nav-btn" href="settings.html">Settings</a>
+</div></nav>
+<div style="padding:14px">
+  <h2 style="color:var(--accent)">Settings</h2>
+  <div style="max-width:600px">
+    <label class="footer-small">Shop Name</label><input id="sName" class="input"><br>
+    <label class="footer-small">Address</label><input id="sAddr" class="input"><br>
+    <label class="footer-small">Contact</label><input id="sContact" class="input"><br>
+    <label class="footer-small">Database Mode</label>
+    <select id="dbMode" class="input"><option value="local">local</option><option value="indexeddb">indexeddb</option><option value="mysql">mysql</option><option value="firebase">firebase</option></select>
+    <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="saveSettings">Save</button><button class="btn ghost" id="resetSettings">Reset</button></div>
+  </div>
+  <div class="footer-small">Settings are stored in localStorage (for offline use). For MySQL/Firebase you need to set up server credentials.</div>
+</div>
+<script src="config.js"></script>
+<script>
+function loadSettings(){ const cfg=CONFIG || {}; document.getElementById('sName').value=localStorage.getItem('pos_shopName')||cfg.shopName||''; document.getElementById('sAddr').value=localStorage.getItem('pos_address')||cfg.address||''; document.getElementById('sContact').value=localStorage.getItem('pos_contact')||cfg.contact||''; document.getElementById('dbMode').value=localStorage.getItem('pos_dbMode')||cfg.dbMode||'local'; }
+document.getElementById('saveSettings').addEventListener('click', ()=>{ localStorage.setItem('pos_shopName', document.getElementById('sName').value); localStorage.setItem('pos_address', document.getElementById('sAddr').value); localStorage.setItem('pos_contact', document.getElementById('sContact').value); localStorage.setItem('pos_dbMode', document.getElementById('dbMode').value); alert('Saved'); });
+document.getElementById('resetSettings').addEventListener('click', ()=>{ localStorage.removeItem('pos_shopName'); localStorage.removeItem('pos_address'); localStorage.removeItem('pos_contact'); localStorage.removeItem('pos_dbMode'); loadSettings(); alert('Reset'); });
+document.addEventListener('DOMContentLoaded', loadSettings);
+</script></body></html>

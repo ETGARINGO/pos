@@ -1,0 +1,112 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Admin - Stock Dashboard</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="navbar"><div class="nav-left">🏪 My Store POS</div><div class="nav-right">
+  <a class="nav-btn" href="index.html">POS</a>
+  <a class="nav-btn" href="inventory.html">Inventory</a>
+  <a class="nav-btn" href="sales.html">Sales</a>\n  <a class="nav-btn" href="admin.html">Admin</a>
+  <a class="nav-btn" href="settings.html">Settings</a>
+</div></nav>
+<div style="padding:14px">
+  <h2 style="color:var(--accent)">Admin Dashboard — Stock Monitoring</h2>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button class="btn" id="refreshStock">Refresh</button>
+    <button class="btn ghost" id="bulkStockBtn">Bulk Stock Update (CSV)</button>
+    <button class="btn ghost" id="lowStockBtn">Highlight Low Stock</button>
+  </div>
+  <table class="table-list" id="stockTable"><tr><th>Item</th><th>Category</th><th>Stock</th><th>Price</th><th>Adjust</th></tr></table>
+  <div class="footer-small" id="lowSummary"></div>
+</div>
+<script src="config.js"></script><script src="db.js"></script><script src="pos.js"></script>
+<script>
+async function loadStock(){
+  const rows = await getStockSummary();
+  const t = document.getElementById('stockTable'); t.innerHTML='<tr><th>Item</th><th>Category</th><th>Stock</th><th>Price</th><th>Adjust</th></tr>';
+  let lowCount = 0;
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.name}</td><td>${r.category}</td><td>${r.stock}</td><td>₱${Number(r.price).toFixed(2)}</td>`;
+    const tdAdj=document.createElement('td');
+    const inp=document.createElement('input'); inp.type='number'; inp.value=r.stock; inp.style.width='80px';
+    const btn=document.createElement('button'); btn.className='smallBtn'; btn.innerText='Set'; btn.onclick=async ()=>{ await updateProductStock(r.name, Number(inp.value)||0); loadStock(); };
+    tdAdj.appendChild(inp); tdAdj.appendChild(btn); const restockBtn=document.createElement('button'); restockBtn.className='smallBtn'; restockBtn.style.background='var(--success)'; restockBtn.style.marginLeft='6px'; restockBtn.innerText='Restock'; restockBtn.onclick=()=>{ document.getElementById('restockItemName').innerText = r.name; document.getElementById('restockQty').value = 1; document.getElementById('restockModal').style.display='flex'; document.getElementById('restockApply').onclick = async ()=>{ const q = Number(document.getElementById('restockQty').value)||0; if(q<=0) return; const user = (getCurrentUser()||{username:'unknown'}).username; await updateProductStock(r.name, Number(r.stock||0)+q); _appendRestockLog({ts: new Date().toLocaleString(), user: user, item: r.name, qty: q}); loadStock(); loadRestockLog(); document.getElementById('restockModal').style.display='none'; }; }; tdAdj.appendChild(restockBtn); tr.appendChild(tdAdj);
+    if(r.stock <= Number(CONFIG.lowStockThreshold || 10)){ tr.style.background='rgba(255,80,80,0.06)'; lowCount++; }
+    t.appendChild(tr);
+  });
+  document.getElementById('lowSummary').innerText = lowCount + ' low-stock items (threshold: ' + (CONFIG.lowStockThreshold||10) + ')';
+}
+document.getElementById('refreshStock').addEventListener('click', loadStock);
+document.getElementById('lowStockBtn').addEventListener('click', ()=>{ alert('Low stock items are highlighted in red rows.'); });
+document.getElementById('bulkStockBtn').addEventListener('click', ()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.csv'; input.onchange=async (e)=>{ const f=e.target.files[0]; if(!f) return; const txt=await f.text(); const lines=txt.split(/\r?\n/).filter(l=>l.trim()!=''); for(let i=1;i<lines.length;i++){ const cols=lines[i].split(','); if(cols.length<2) continue; const name=cols[0].trim(); const stock=parseInt(cols[3]||'0')||0; await updateProductStock(name,stock); } loadStock(); alert('Bulk stock update applied'); }; input.click(); });
+document.addEventListener('DOMContentLoaded', loadStock);
+</script><!-- Restock Modal -->
+<div class="modalBack" id="restockModal" style="display:none;"><div class="modal"><h3>Restock Item</h3>
+  <div id="restockItemName" style="font-weight:700;margin-bottom:8px"></div>
+  <input id="restockQty" class="input" placeholder="Quantity to add" type="number" min="1" value="1">
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button id="restockCancel" class="smallBtn">Cancel</button><button id="restockApply" class="smallBtn" style="background:var(--accent);color:#07140f">Apply</button></div>
+</div></div>
+
+<div style="padding:14px">
+  <h3 style="color:var(--accent)">Restock Log</h3>
+  <table class="table-list" id="restockLog"><tr><th>Date</th><th>User</th><th>Item</th><th>Qty</th></tr></table>
+</div>
+<script>
+function loadRestockLog(){
+  const rows = getRestockLog();
+  const t = document.getElementById('restockLog'); t.innerHTML='<tr><th>Date</th><th>User</th><th>Item</th><th>Qty</th></tr>';
+  rows.forEach(r=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${r.ts}</td><td>${r.user}</td><td>${r.item}</td><td>${r.qty}</td>`; t.appendChild(tr); });
+}
+</script>
+<div style="padding:14px">
+  <h3 style="color:var(--accent)">Backup & Restore</h3>
+  <button id="btnBackup" class="btn">Download Backup</button>
+  <input type="file" id="restoreFile" style="display:none" accept="application/json">
+  <button id="btnRestore" class="btn" style="background:var(--danger);">Restore Backup</button>
+</div>
+<script>
+function downloadJSON(obj, filename){
+  const blob = new Blob([JSON.stringify(obj,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function gatherBackup(){
+  const products = JSON.parse(localStorage.getItem('offline_pos_products')||'[]');
+  const sales = JSON.parse(localStorage.getItem('offline_pos_sales')||'[]');
+  const restockLogs = JSON.parse(localStorage.getItem('offline_pos_restock_log')||'[]');
+  const users = (typeof USERS !== 'undefined') ? USERS.map(u=>({username:u.username, role:u.role})) : [];
+  return { exportedAt: new Date().toLocaleString(), products, sales, restockLogs, users };
+}
+document.getElementById('btnBackup').onclick=()=>{
+  const data = gatherBackup();
+  const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+  downloadJSON(data, 'pos_backup_'+ts+'.json');
+};
+document.getElementById('btnRestore').onclick=()=>{
+  if(!confirm('⚠️ Restoring will overwrite current data. Continue?')) return;
+  document.getElementById('restoreFile').click();
+};
+document.getElementById('restoreFile').addEventListener('change', function(){
+  const file = this.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const data = JSON.parse(e.target.result);
+      // safety backup
+      const safe = gatherBackup();
+      localStorage.setItem('offline_pos_backup_before_restore', JSON.stringify(safe));
+      if(data.products) localStorage.setItem('offline_pos_products', JSON.stringify(data.products));
+      if(data.sales) localStorage.setItem('offline_pos_sales', JSON.stringify(data.sales));
+      if(data.restockLogs) localStorage.setItem('offline_pos_restock_log', JSON.stringify(data.restockLogs));
+      alert('✅ Restore complete. Reloading...');
+      location.reload();
+    } catch(err){
+      alert('Restore failed: '+err);
+    }
+  };
+  reader.readAsText(file);
+});
+</script>
+
+</body></html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Inventory - My Store</title><link rel="stylesheet" href="style.css"></head><body>
+<nav class="navbar"><div class="nav-left">🏪 My Store POS</div><div class="nav-right">
+  <a class="nav-btn" href="index.html">POS</a>
+  <a class="nav-btn" href="inventory.html">Inventory</a>
+  <a class="nav-btn" href="sales.html">Sales</a>\n  <a class="nav-btn" href="admin.html">Admin</a>
+  <a class="nav-btn" href="settings.html">Settings</a>
+</div></nav>
+<div style="padding:14px">
+  <h2 style="color:var(--accent)">Inventory</h2>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button class="btn" id="newProductBtn">➕ New Product</button>
+    <button class="btn ghost" id="impBtn">Import CSV</button>
+    <button class="btn ghost" id="expBtn">Export CSV</button>
+  </div>
+  <table class="table-list" id="invTable"><tr><th>Name</th><th>Category</th><th>Price</th><th>Actions</th></tr></table>
+  <div class="footer-small">Products are stored locally; use Export CSV to save changes permanently.</div>
+</div>
+
+<div class="modalBack" id="invModal"><div class="modal"><h3>New / Edit Product</h3>
+<input id="invName" class="input" placeholder="Product name"><input id="invCat" class="input" placeholder="Category"><input id="invPrice" class="input" placeholder="Price">
+<div style="display:flex;gap:8px;justify-content:flex-end"><button id="invCancel" class="smallBtn">Cancel</button><button id="invSave" class="smallBtn" style="background:var(--accent);color:#07140f">Save</button></div></div></div>
+
+<script src="config.js"></script><script src="db.js"></script><script src="pos.js"></script>
+<script>
+let invItems = [];
+async function initInventory(){
+  invItems = await getAllItems();
+  renderInventory();
+  document.getElementById('newProductBtn').addEventListener('click', ()=>{ document.getElementById('invModal').style.display='flex'; document.getElementById('invName').value=''; document.getElementById('invCat').value=''; document.getElementById('invPrice').value=''; });
+  document.getElementById('invCancel').addEventListener('click', ()=> document.getElementById('invModal').style.display='none');
+  document.getElementById('invSave').addEventListener('click', async ()=>{ const name=document.getElementById('invName').value.trim(); const cat=document.getElementById('invCat').value.trim()||'Uncategorized'; const price=parseFloat(document.getElementById('invPrice').value)||0; if(!name){ alert('Enter a name'); return; } const merged = await addProduct({name,category:cat,price}); invItems = merged.map(p=>[p.name,p.category,p.price]); renderInventory(); document.getElementById('invModal').style.display='none'; });
+  document.getElementById('impBtn').addEventListener('click', ()=>{ const input=document.createElement('input'); input.type='file'; input.accept='.csv'; input.onchange=async (e)=>{ const f=e.target.files[0]; if(!f) return; const txt=await f.text(); importProductsFromCSVText(txt); invItems = await getAllItems(); renderInventory(); alert('Imported'); }; input.click(); });
+  document.getElementById('expBtn').addEventListener('click', async ()=>{ const csv = await exportProductsCSV(); const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='products_export.csv'; a.click(); });
+}
+function renderInventory(){ const t=document.getElementById('invTable'); t.innerHTML='<tr><th>Name</th><th>Category</th><th>Price</th><th>Actions</th></tr>'; invItems.forEach(it=>{ const tr=document.createElement('tr'); const tdName=document.createElement('td'); tdName.innerText=it[0]; tr.appendChild(tdName); const tdCat=document.createElement('td'); tdCat.innerText=it[1]; tr.appendChild(tdCat); const tdPrice=document.createElement('td'); tdPrice.innerText='₱'+Number(it[2]).toFixed(2); tr.appendChild(tdPrice); const tdAct=document.createElement('td'); const edit=document.createElement('button'); edit.className='smallBtn'; edit.innerText='Edit'; edit.onclick=()=>{ document.getElementById('invModal').style.display='flex'; document.getElementById('invName').value=it[0]; document.getElementById('invCat').value=it[1]; document.getElementById('invPrice').value=it[2]; document.getElementById('invSave').onclick=async ()=>{ const name=document.getElementById('invName').value.trim(); const cat=document.getElementById('invCat').value.trim()||'Uncategorized'; const price=parseFloat(document.getElementById('invPrice').value)||0; if(!name) return; const merged = await addProduct({name,category:cat,price}); invItems = merged.map(p=>[p.name,p.category,p.price]); renderInventory(); document.getElementById('invModal').style.display='none'; }; }; tdAct.appendChild(edit); const del=document.createElement('button'); del.className='smallBtn'; del.style.background='var(--danger)'; del.innerText='Delete'; del.onclick=()=>{ if(confirm('Delete product?')){ const cur=invItems.filter(x=>x[0]!==it[0]).map(x=>({name:x[0],category:x[1],price:x[2]})); saveProductsToLocalStorage(cur); invItems=invItems.filter(x=>x[0]!==it[0]); renderInventory(); } }; tdAct.appendChild(del); tr.appendChild(tdAct); t.appendChild(tr); }); }
+document.addEventListener('DOMContentLoaded', initInventory);
+</script></body></html>

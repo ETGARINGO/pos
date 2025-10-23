@@ -1,0 +1,101 @@
+﻿ProductID,ProductName,Category,Price,Stock
+P001,Coke Mismo 300ml,Beverages,20,100
+P002,Coke 1.5L,Beverages,75,50
+P003,Sprite 1.5L,Beverages,70,50
+P004,Royal 1.5L,Beverages,70,50
+P005,Mineral Water 500ml,Beverages,15,200
+P006,Gatorade 500ml,Beverages,45,60
+P007,Coffee 3-in-1 Sachet,Beverages,10,300
+P008,Milo Sachet,Beverages,12,250
+P009,Nestea Iced Tea Sachet,Beverages,10,150
+P010,San Miguel Pale Pilsen,Beverages,45,40
+P011,SkyFlakes (3pcs),Snacks,15,100
+P012,Piattos,Snacks,20,80
+P013,Nova,Snacks,20,80
+P014,Chippy Small,Snacks,15,80
+P015,Presto Peanut Butter,Snacks,10,100
+P016,Rebisco Sandwich,Snacks,10,120
+P017,Hansel Mocha,Snacks,10,120
+P018,Fudgee Barr,Snacks,15,120
+P019,Cloud 9,Snacks,12,120
+P020,Moby,Snacks,12,120
+P021,Mentos Roll,Candies,15,50
+P022,Judge Chewing Gum,Candies,2,200
+P023,Juicy Fruit Gum,Candies,2,200
+P024,XO Candy,Candies,1,300
+P025,Frutos,Candies,1,300
+P026,Halls,Candies,2,200
+P027,Egg (pc),Food,8,200
+P028,Rice (per kilo),Food,55,100
+P029,Cooking Oil 250ml,Food,40,50
+P030,Soy Sauce 250ml,Food,20,50
+P031,Vinegar 250ml,Food,20,50
+P032,Salt Small Pack,Food,10,100
+P033,Sugar 1kg,Food,70,50
+P034,Instant Noodles,Food,15,100
+P035,Lucky Me Pancit Canton,Food,20,100
+P036,Loaf Bread Small,Food,50,30
+P037,Sunsilk Sachet,Toiletries,10,200
+P038,Head & Shoulders Sachet,Toiletries,12,200
+P039,Palmolive Sachet,Toiletries,10,200
+P040,Safeguard Soap Small,Toiletries,20,100
+P041,Lifebuoy Soap Small,Toiletries,18,100
+P042,Colgate Toothpaste Sachet,Toiletries,10,200
+P043,CloseUp Toothpaste Sachet,Toiletries,10,200
+P044,Surf Detergent Sachet,Toiletries,8,300
+P045,Tide Detergent Sachet,Toiletries,10,250
+P046,Joy Dishwashing Sachet,Toiletries,8,300
+P047,Sardines in Tomato Sauce,Canned Goods,20,100
+P048,Corned Beef Small,Canned Goods,35,100
+P049,Meat Loaf Small,Canned Goods,25,100
+P050,Tuna Flakes Small,Canned Goods,30,100
+P051,Pork & Beans Small,Canned Goods,25,100
+P052,Hotdog 1kg,Frozen,180,20
+P053,Longganisa 1kg,Frozen,160,20
+P054,Tocino 1kg,Frozen,180,20
+P055,Tilapia (per kilo),Frozen,120,30
+P056,Bangus (per kilo),Frozen,150,30
+P057,Candles Small (2pcs),Household,15,50
+P058,Matchbox,Household,5,100
+P059,Battery AA (2pcs),Household,25,50
+P060,Battery AAA (2pcs),Household,25,50
+P061,Plastic Bag Small (pack),Household,20,50
+P062,Plastic Bag Large (pack),Household,30,50
+P063,Lighter,Household,20,50
+P064,Charcoal (per kilo),Household,30,30
+P065,Floor Wax Small,Household,35,30
+P066,Biogesic Tablet,Medicine,6,100
+P067,Neozep Tablet,Medicine,8,100
+P068,Kremil-S Tablet,Medicine,8,100
+P069,Enervon C Tablet,Medicine,10,100
+P070,Efficascent Oil Small,Medicine,35,50
+P071,Alcohol 250ml,Medicine,45,50
+P072,Betadine Small,Medicine,25,30
+P073,Zesto Juice Pack,Beverages,12,200
+P074,Chuckie Choco Drink,Beverages,20,150
+P075,C2 Green Tea,Beverages,25,100
+P076,Pepsi 1.5L,Beverages,70,50
+P077,RC Cola 1.5L,Beverages,60,50
+P078,7Up 1.5L,Beverages,70,50
+P079,Mountain Dew 1.5L,Beverages,70,50
+P080,Bottled Water 1L,Beverages,25,100
+P081,ChocNut Pack,Snacks,12,150
+P082,Happy Peanuts Small,Snacks,10,150
+P083,Boy Bawang Cornick,Snacks,12,200
+P084,Ding Dong Mixed Nuts,Snacks,15,200
+P085,V-Cut Chips,Snacks,20,80
+P086,Ruffles Chips Small,Snacks,25,60
+P087,Oreo Small Pack,Snacks,20,80
+P088,KitKat 2-Finger,Snacks,20,60
+P089,Snickers Small,Snacks,30,50
+P090,M&M’s Small Pack,Snacks,30,50
+P091,Yakult (5s),Beverages,55,30
+P092,Dutch Mill Yogurt Drink,Beverages,25,50
+P093,Bear Brand Sterilized Milk,Beverages,25,50
+P094,Alaska Condensed Milk Small,Food,35,40
+P095,Alaska Evaporada Small,Food,25,40
+P096,Bear Brand Powdered Milk 33g,Food,15,100
+P097,Nescafe Original Sachet,Beverages,10,200
+P098,Great Taste White Sachet,Beverages,10,200
+P099,Energen Sachet,Beverages,12,150
+P100,Milo Tetra Pack,Beverages,20,80

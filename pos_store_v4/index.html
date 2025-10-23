@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>POS - My Store</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="navbar">
+  <div class="nav-left">🏪 My Store POS</div>
+  <div class="nav-right">
+    <a class="nav-btn" href="index.html">POS</a>
+    <a class="nav-btn" href="inventory.html">Inventory</a>
+    <a class="nav-btn" href="sales.html">Sales</a>
+    <a class="nav-btn" href="admin.html">Admin</a>
+    <a class="nav-btn" href="settings.html">Settings</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="left">
+    <h2 class="h1">POINT OF SALE</h2>
+    <div class="controls">
+      <input id="searchBox" class="search" placeholder="Search items..." onkeyup="filterItemsPOS()">
+      <button class="btn" id="addProductBtn">➕ Add Product</button>
+      <button class="btn ghost" id="importBtn">Import CSV</button>
+    </div>
+    <div id="dashboard"></div>
+  </div>
+
+  <div class="right">
+    <div class="orderHeader">
+      <div>
+        <strong>Current Order</strong>
+        <div class="small">Cart stored locally</div>
+      </div>
+    </div>
+    <table class="orderTable" id="orderTable">
+      <tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th><th></th></tr>
+    </table>
+    <div id="total" class="total">Total: ₱0.00</div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn" id="checkoutBtn" style="flex:1">CHECKOUT</button>
+      <button class="btn ghost" id="clearBtn" style="flex:1">CLEAR</button>
+    </div>
+    <div style="margin-top:8px">
+      <button class="btn ghost" id="printBtn" style="width:100%">PRINT RECEIPT</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal add product -->
+<div class="modalBack" id="modalBack">
+  <div class="modal" role="dialog">
+    <h3>Add Product</h3>
+    <input id="pName" class="input" placeholder="Product name">
+    <input id="pCategory" class="input" placeholder="Category">
+    <input id="pPrice" class="input" placeholder="Price">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button id="cancelAdd" class="smallBtn">Cancel</button>
+      <button id="saveAdd" class="smallBtn" style="background:var(--accent);color:#07140f">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+// session check - redirect to login if not authenticated
+(function(){
+  try{
+    const cur = localStorage.getItem('offline_pos_currentUser');
+    if(!cur){ window.location.href='login.html'; }
+    const user = JSON.parse(cur);
+    if(user.role !== 'Admin'){
+      document.addEventListener('DOMContentLoaded', ()=>{
+        document.querySelectorAll('.nav-btn').forEach(a=>{
+          if(a.getAttribute('href') && (a.getAttribute('href').includes('inventory') || a.getAttribute('href').includes('settings')))
+            a.style.display='none';
+        });
+        const span = document.createElement('div'); 
+        span.style.color='var(--muted)'; span.style.marginLeft='12px'; 
+        span.innerText='Welcome, '+user.username; 
+        document.querySelector('.nav-right').appendChild(span);
+
+        const logout = document.createElement('button'); 
+        logout.className='nav-btn'; logout.style.background='var(--danger)'; 
+        logout.style.color='#fff'; logout.innerText='Logout'; 
+        logout.onclick=()=>{
+          localStorage.removeItem('offline_pos_currentUser'); 
+          localStorage.removeItem('offline_pos_remember'); 
+          window.location.href='login.html'; 
+        }; 
+        document.querySelector('.nav-right').appendChild(logout);
+      });
+    } else {
+      document.addEventListener('DOMContentLoaded', ()=>{
+        const user = JSON.parse(localStorage.getItem('offline_pos_currentUser')||'{}');
+        const span = document.createElement('div'); 
+        span.style.color='var(--muted)'; span.style.marginLeft='12px'; 
+        span.innerText='Welcome, '+user.username; 
+        document.querySelector('.nav-right').appendChild(span);
+
+        const logout = document.createElement('button'); 
+        logout.className='nav-btn'; logout.style.background='var(--danger)'; 
+        logout.style.color='#fff'; logout.innerText='Logout'; 
+        logout.onclick=()=>{
+          localStorage.removeItem('offline_pos_currentUser'); 
+          localStorage.removeItem('offline_pos_remember'); 
+          window.location.href='login.html'; 
+        }; 
+        document.querySelector('.nav-right').appendChild(logout);
+      });
+    }
+  }catch(e){ console.warn(e); }
+})();
+</script>
+<script src="db.js"></script>
+<script src="pos.js"></script>
+<script>
+let allItemsPOS = [];
+async function initPOS(){
+  allItemsPOS = await getAllItems();
+  renderItemsPOS(allItemsPOS);
+  updateOrderDisplay();
+
+  document.getElementById('addProductBtn').addEventListener('click', ()=> document.getElementById('modalBack').style.display='flex');
+  document.getElementById('cancelAdd').addEventListener('click', ()=> document.getElementById('modalBack').style.display='none');
+
+  document.getElementById('saveAdd').addEventListener('click', async ()=>{
+    const name=document.getElementById('pName').value.trim(); 
+    const cat=document.getElementById('pCategory').value.trim()||'Uncategorized'; 
+    const price=parseFloat(document.getElementById('pPrice').value)||0;
+    if(!name){ alert('Enter a product name'); return; }
+
+    const merged = await addProduct({name,category:cat,price}); 
+    allItemsPOS = merged.map(p=>[p.name,p.category,p.price]); 
+    renderItemsPOS(allItemsPOS);
+
+    document.getElementById('modalBack').style.display='none'; 
+    document.getElementById('pName').value=''; 
+    document.getElementById('pCategory').value=''; 
+    document.getElementById('pPrice').value='';
+  });
+
+  // ✅ Checkout with silent auto-backup
+  document.getElementById('checkoutBtn').addEventListener('click', ()=>{
+    const res = checkoutOrder();
+    if(res.success){
+      alert(res.msg + ' Total: ₱' + Number(res.total).toFixed(2));
+      saveAutoBackup();   // silent save into localStorage
+    } else {
+      alert(res.msg);
+    }
+    updateOrderDisplay();
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', ()=>{
+    clearOrder(); updateOrderDisplay();
+  });
+
+  document.getElementById('printBtn').addEventListener('click', ()=>{
+    const html = generateReceiptHTML(); 
+    if(html==='No items to print'){ alert('No items to print'); return;}
+    const w=window.open('','_blank','width=320,height=700'); 
+    w.document.write(html); w.document.close(); w.focus(); w.print(); 
+  });
+
+  document.getElementById('importBtn').addEventListener('click', ()=>{
+    const input=document.createElement('input'); 
+    input.type='file'; input.accept='.csv'; 
+    input.onchange = async (e)=>{
+      const f=e.target.files[0]; if(!f) return; 
+      const txt=await f.text(); 
+      importProductsFromCSVText(txt); 
+      allItemsPOS = await getAllItems(); 
+      renderItemsPOS(allItemsPOS); 
+      alert('Imported'); 
+    }; 
+    input.click(); 
+  });
+}
+
+function renderItemsPOS(items){
+  const dash=document.getElementById('dashboard'); 
+  dash.innerHTML=''; 
+  let currentCategory='';
+  items.forEach(it=>{
+    const name=it[0], category=it[1], price=Number(it[2]); 
+    if(currentCategory!==category){
+      currentCategory=category; 
+      const h=document.createElement('div'); 
+      h.className='category'; 
+      h.innerHTML=`<h3>${category}</h3>`; 
+      dash.appendChild(h); 
+    }
+
+    const row=document.createElement('div'); 
+    row.className='itemRow'; 
+
+    // ✅ name is now a button
+    const nameBtn=document.createElement('button'); 
+    nameBtn.className='itemBtn'; 
+    nameBtn.innerText=name; 
+    nameBtn.onclick=()=>{ 
+      const qty=row.querySelector('input').value || 1;
+      addItemToOrder(name,price,Number(qty)); 
+      updateOrderDisplay(); 
+    };
+
+    const priceDiv=document.createElement('div'); 
+    priceDiv.className='itemPrice'; 
+    priceDiv.innerText='₱'+price.toFixed(2); 
+
+    const qty=document.createElement('input'); 
+    qty.type='number'; qty.min=1; qty.value=1; 
+    qty.style.width='68px'; qty.style.marginRight='8px'; 
+
+    row.appendChild(nameBtn); 
+    row.appendChild(priceDiv); 
+    row.appendChild(qty); 
+    dash.appendChild(row); 
+  });
+}
+
+
+function filterItemsPOS(){ 
+  const q=document.getElementById('searchBox').value.toLowerCase(); 
+  renderItemsPOS(allItemsPOS.filter(i=> 
+    String(i[0]).toLowerCase().includes(q) || 
+    String(i[1]).toLowerCase().includes(q)
+  )); 
+}
+
+function updateOrderDisplay(){ 
+  const data = getCurrentOrder(); 
+  const table = document.getElementById('orderTable'); 
+  table.innerHTML = `<tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th><th></th></tr>`; 
+  data.order.forEach(row=>{
+    const tr=document.createElement('tr'); 
+    const tdName=document.createElement('td'); 
+    tdName.innerText=row[0]; 
+    tr.appendChild(tdName); 
+    const tdQty=document.createElement('td'); 
+    const qInput=document.createElement('input'); 
+    qInput.type='number'; qInput.min=0; qInput.value=row[1]; 
+    qInput.style.width='60px'; 
+    qInput.onchange = ()=>{
+      const cur=JSON.parse(localStorage.getItem('offline_pos_order')||'{}'); 
+      if(Number(qInput.value)<=0) delete cur[row[0]]; 
+      else cur[row[0]]={price:row[2],qty:Number(qInput.value)}; 
+      localStorage.setItem('offline_pos_order', JSON.stringify(cur)); 
+      updateOrderDisplay(); 
+    }; 
+    tdQty.appendChild(qInput); 
+    tr.appendChild(tdQty); 
+    const tdPrice=document.createElement('td'); 
+    tdPrice.innerText='₱'+Number(row[2]).toFixed(2); 
+    tr.appendChild(tdPrice); 
+    const tdSub=document.createElement('td'); 
+    tdSub.innerText='₱'+Number(row[3]).toFixed(2); 
+    tr.appendChild(tdSub); 
+    const tdAct=document.createElement('td'); 
+    const rem=document.createElement('button'); 
+    rem.className='smallBtn'; 
+    rem.innerText='Remove'; 
+    rem.onclick=()=>{ removeItemFromOrder(row[0]); updateOrderDisplay(); }; 
+    tdAct.appendChild(rem); 
+    tr.appendChild(tdAct); 
+    table.appendChild(tr); 
+  }); 
+  document.getElementById('total').innerText='Total: ₱'+Number(data.total).toFixed(2); 
+}
+
+function saveAutoBackup(){
+  try {
+    const db = {
+      items: JSON.parse(localStorage.getItem('offline_pos_items')||'[]'),
+      sales: JSON.parse(localStorage.getItem('offline_pos_sales')||'[]'),
+      users: JSON.parse(localStorage.getItem('offline_pos_users')||'[]')
+    };
+    const ts = new Date().toISOString();
+    localStorage.setItem('offline_pos_autobackup', JSON.stringify({ts, db}));
+    console.log('✅ Auto-backup saved at', ts);
+  } catch(e){
+    console.error('Auto-backup failed:', e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initPOS);
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Login - POS</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:linear-gradient(180deg,#071522,#0b1e1a)">
+  <div style="width:360px;background:rgba(255,255,255,0.03);padding:20px;border-radius:10px">
+    <h2 style="color:var(--accent);text-align:center">POS Login</h2>
+    <input id="uName" class="input" placeholder="Username">
+    <input id="uPin" class="input" placeholder="4-digit PIN" maxlength="6">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <input type="checkbox" id="rememberMe">
+      <label for="rememberMe" class="footer-small">Remember me</label>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button id="loginBtn" class="btn">Login</button>
+    </div>
+    <div id="loginMsg" class="footer-small" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="pos.js"></script>
+<script>
+document.getElementById('loginBtn').addEventListener('click', ()=>{
+  const u = document.getElementById('uName').value.trim();
+  const p = document.getElementById('uPin').value.trim();
+  const rem = document.getElementById('rememberMe').checked;
+  const valid = validateUser(u, p);
+  if(valid){ 
+    setCurrentUser(valid, rem); 
+    window.location.href='index.html'; 
+  } else { 
+    document.getElementById('loginMsg').innerText='Invalid username or PIN'; 
+  }
+});
+
+// Auto-redirect if remember me session exists
+(function(){ 
+  const rem = localStorage.getItem('offline_pos_remember'); 
+  const cur = localStorage.getItem('offline_pos_currentUser'); 
+  if(rem && cur){ window.location.href='index.html'; } 
+})();
+</script>
+</body>
+</html>
